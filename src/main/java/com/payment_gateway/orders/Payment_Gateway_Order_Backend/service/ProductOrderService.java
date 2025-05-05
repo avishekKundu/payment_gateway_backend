@@ -1,6 +1,9 @@
 package com.payment_gateway.orders.Payment_Gateway_Order_Backend.service;
 
+import com.payment_gateway.orders.Payment_Gateway_Order_Backend.dao.OrderStatus;
+import com.payment_gateway.orders.Payment_Gateway_Order_Backend.dao.model.ProductOrderEntity;
 import com.payment_gateway.orders.Payment_Gateway_Order_Backend.data.ProductOrder;
+import com.payment_gateway.orders.Payment_Gateway_Order_Backend.mapper.ProductOrderMapper;
 import com.payment_gateway.orders.Payment_Gateway_Order_Backend.repository.ProductOrderRepository;
 import com.razorpay.Order;
 import com.razorpay.RazorpayClient;
@@ -8,6 +11,8 @@ import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
+import java.util.UUID;
 
 @Service
 public class ProductOrderService {
@@ -33,8 +38,13 @@ public class ProductOrderService {
 
         // create order in razorpay
         Order razorPayOrder = razorpayClient.orders.create(productOrderData);
-        productOrder.setStatus(razorPayOrder.get("status"));
-        ProductOrder savedProductOrder = productOrderRepository.save(productOrder);
-        return productOrder;
+        if (razorPayOrder.get("status").equals("created"))
+            productOrder.setStatus(OrderStatus.PENDING);
+        ProductOrderEntity productOrderEntity = ProductOrderMapper.toEntity(productOrder);
+        return ProductOrderMapper.toDto(productOrderRepository.save(productOrderEntity));
+    }
+
+    public ProductOrder getProductOrderById(UUID orderId) {
+        return ProductOrderMapper.toDto(productOrderRepository.findProductOrderById(orderId));
     }
 }
